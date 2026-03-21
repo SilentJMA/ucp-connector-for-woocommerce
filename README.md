@@ -150,4 +150,4 @@ bash scripts/smoke-test.sh
 
 ## Version
 
-- Current plugin version: `1.0.0`
+- Current plugin version: `1.0.1`

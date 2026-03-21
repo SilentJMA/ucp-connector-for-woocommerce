@@ -26,12 +26,26 @@
 			const $copyBtn = $('<button type="button" class="button button-secondary">Copy</button>');
 			$apiKeyField.after($copyBtn);
 
-			$copyBtn.on('click', function () {
-				$apiKeyField.trigger('focus').trigger('select');
-				document.execCommand('copy');
+			$copyBtn.on('click', async function () {
+				const value = $apiKeyField.val();
+				let copied = false;
+
+				if (navigator.clipboard && window.isSecureContext) {
+					try {
+						await navigator.clipboard.writeText(value);
+						copied = true;
+					} catch (e) {
+						copied = false;
+					}
+				}
+
+				if (!copied) {
+					$apiKeyField.trigger('focus').trigger('select');
+					copied = document.execCommand('copy');
+				}
 
 				const original = $copyBtn.text();
-				$copyBtn.text('Copied');
+				$copyBtn.text(copied ? 'Copied' : 'Copy failed');
 				setTimeout(function () {
 					$copyBtn.text(original);
 				}, 1200);
