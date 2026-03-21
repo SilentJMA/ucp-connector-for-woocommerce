@@ -249,32 +249,51 @@ class UCP_Adapter_REST_API
 	 */
 	public static function check_api_permission($request)
 	{
+		static $permission_cache = array();
+		$cache_key = md5(
+			(string) $request->get_method() . '|' .
+			(string) $request->get_route() . '|' .
+			(string) $request->get_header('Authorization') . '|' .
+			(string) $request->get_header('X-UCP-API-Key') . '|' .
+			(string) $request->get_header('X-ACP-API-Key') . '|' .
+			(string) $request->get_header('UCP-Agent') . '|' .
+			(string) $request->get_param('api_key')
+		);
+		if (array_key_exists($cache_key, $permission_cache)) {
+			return $permission_cache[ $cache_key ];
+		}
+
 		$route = (string) $request->get_route();
 		if (false !== strpos($route, '/acp/') && ! (bool) get_option('ucp_adapter_protocol_acp_enabled', 1)) {
-			return new WP_Error(
+			$permission_cache[ $cache_key ] = new WP_Error(
 				'ucp_adapter_acp_disabled',
 				__('ACP protocol is disabled.', 'ucp-adapter-for-woocommerce'),
 				array('status' => 403)
 			);
+			return $permission_cache[ $cache_key ];
 		}
 		if (false !== strpos($route, '/ucp/') && ! (bool) get_option('ucp_adapter_protocol_ucp_enabled', 1)) {
-			return new WP_Error(
+			$permission_cache[ $cache_key ] = new WP_Error(
 				'ucp_adapter_ucp_disabled',
 				__('UCP protocol is disabled.', 'ucp-adapter-for-woocommerce'),
 				array('status' => 403)
 			);
+			return $permission_cache[ $cache_key ];
 		}
 
 		$auth = UCP_Adapter_Security::authenticate_request($request);
 		if (is_wp_error($auth)) {
+			$permission_cache[ $cache_key ] = $auth;
 			return $auth;
 		}
 
 		$verified = UCP_Adapter_Security::verify_request($request, $auth['identity']);
 		if (is_wp_error($verified)) {
+			$permission_cache[ $cache_key ] = $verified;
 			return $verified;
 		}
 
+		$permission_cache[ $cache_key ] = true;
 		return true;
 	}
 
