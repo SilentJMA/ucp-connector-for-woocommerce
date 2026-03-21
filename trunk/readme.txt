@@ -58,7 +58,7 @@ Shared
 == Changelog ==
 
 = 1.3.0 =
-* Added Shopware-style agent security model controls.
+* Added agent security model controls.
 * Added `UCP-Agent` domain allowlist support with wildcard and known-platform fallback.
 * Added optional `Request-Signature` detached JWS verification against agent profile signing keys.
 * Improved admin settings UI with clearer security-focused sections.

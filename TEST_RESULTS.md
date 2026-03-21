@@ -2,14 +2,13 @@
 
 ## Environment
 
-- Site: `stagingaa` (LocalWP)
-- Base URL used for validation: `http://127.0.0.1:10003`
+- Runtime: Local WordPress + WooCommerce
 - Date: March 21, 2026
 - Plugin version under test: `1.3.0`
 
 ## Smoke Test Coverage
 
-Script: [`scripts/smoke-test.sh`](/Users/home/Local Sites/stagingaa/app/public/wp-content/plugins/ucp-adapter-for-woocommerce/scripts/smoke-test.sh)
+Script: [`scripts/smoke-test.sh`](./scripts/smoke-test.sh)
 
 Validated flows:
 - ACP: create -> update -> get -> complete -> order lookup

@@ -1,23 +1,20 @@
 # UCP Connector for WooCommerce
 
-WooCommerce plugin for **UCP** and **OpenAI Agentic Commerce Protocol (ACP)** checkout flows.
+UCP Connector for WooCommerce is a merchant-owned checkout adapter for:
+- UCP APIs (`/wp-json/ucp/v1`)
+- ACP APIs (`/wp-json/acp/v1`)
 
-This plugin exposes merchant-owned checkout sessions and order creation APIs under:
-- `wp-json/acp/v1` (ACP)
-- `wp-json/ucp/v1` (UCP compatibility)
+It keeps one normalized checkout-session model and maps it to WooCommerce carts and orders.
 
-## Why This Plugin
+## Core Features
 
-UCP Connector for WooCommerce gives you one normalized commerce adapter for:
-- ACP-style checkout sessions (`create`, `update`, `get`, `complete`, `cancel`)
-- Legacy UCP session compatibility routes
-- Merchant-authoritative pricing/tax/stock recalculation on each update
-- WooCommerce-native order creation and lookup
+### Unified Checkout Session Model
+- Single session structure used by both ACP and UCP endpoints
+- Merchant-authoritative recalculation of price, tax, stock, and fulfillment state
+- Consistent response objects for line items, totals, messages, links, and order data
 
-## Features
-
-### Protocol and API
-- ACP checkout session routes:
+### ACP and UCP Route Coverage
+- ACP checkout sessions:
   - `POST /checkout_sessions`
   - `POST /checkout_sessions/{id}`
   - `GET /checkout_sessions/{id}`
@@ -28,74 +25,59 @@ UCP Connector for WooCommerce gives you one normalized commerce adapter for:
   - `PUT /update/{id}`
   - `GET /status/{id}`
   - `POST /complete/{id}`
-- Shared routes:
+- Shared utility routes:
   - `GET /capabilities`
   - `GET /product/search`
   - `GET /orders/{order_id}`
   - `GET /sessions`
 
-### Security Model (Shopware-inspired, adapted for WooCommerce)
-- API key authentication:
+### Security Controls
+- API key authentication with:
   - `Authorization: Bearer <key>`
   - `X-UCP-API-Key: <key>`
   - `X-ACP-API-Key: <key>`
 - Optional IP allowlist
-- Optional rate limiting (IP + auth identity)
-- Optional `UCP-Agent` profile domain allowlist with wildcard support (`*.openai.com`)
-- Optional detached JWS request signature verification via `Request-Signature` and agent `signing_keys`
+- Optional request rate limiting
+- Optional `UCP-Agent` domain allowlist with wildcard matching
+- Optional detached JWS request signature verification via `Request-Signature`
+
+### WooCommerce Order Mapping
+- Creates WooCommerce orders from checkout sessions
+- Returns both `billing_address` and `shipping_address` in completion and order lookup responses
+- Exposes order IDs and totals for follow-up workflows
 
 ### Admin Experience
-- Clear settings sections for:
-  - Core plugin settings
-  - Agent security model
-  - Network guards
-- API key regeneration
-- Protocol toggles
-- Store metadata + policy link controls
+- Settings for protocol toggles, API key, and timeouts
+- Merchant metadata and policy link configuration
+- Security section for rate limits, IP allowlists, agent controls, and signatures
+- Sessions view for recent checkout lifecycle monitoring
 
-## Quick Start
+## Installation
 
-1. Activate plugin in WordPress.
-2. Open **UCP Connector for WooCommerce** in wp-admin.
-3. Copy API key.
-4. Enable ACP/UCP protocols as needed.
-5. Call API endpoints with your API key.
+1. Install and activate the plugin.
+2. Open **UCP Connector for WooCommerce** in WordPress admin.
+3. Generate or copy the API key.
+4. Configure protocol, security, and merchant settings.
 
-## Request Examples
+## Usage Examples
 
-Use local fixtures as examples:
-- ACP fixtures: [`fixtures/acp/`](/Users/home/Local Sites/stagingaa/app/public/wp-content/plugins/ucp-adapter-for-woocommerce/fixtures/acp)
-- UCP fixtures: [`fixtures/ucp/`](/Users/home/Local Sites/stagingaa/app/public/wp-content/plugins/ucp-adapter-for-woocommerce/fixtures/ucp)
+- ACP payload fixtures: [`fixtures/acp`](./fixtures/acp)
+- UCP payload fixtures: [`fixtures/ucp`](./fixtures/ucp)
+- Smoke test script: [`scripts/smoke-test.sh`](./scripts/smoke-test.sh)
 
-Smoke test runner:
-- [`scripts/smoke-test.sh`](/Users/home/Local Sites/stagingaa/app/public/wp-content/plugins/ucp-adapter-for-woocommerce/scripts/smoke-test.sh)
-
-Run:
+Example run:
 
 ```bash
-BASE_URL="http://127.0.0.1:10003" \
+BASE_URL="https://your-wordpress-site.example" \
 API_KEY="your_api_key" \
 PRODUCT_ID=123 \
 bash scripts/smoke-test.sh
 ```
 
-## Test Results
+## Validation Results
 
-Current local validation summary is tracked here:
-- [`TEST_RESULTS.md`](/Users/home/Local Sites/stagingaa/app/public/wp-content/plugins/ucp-adapter-for-woocommerce/TEST_RESULTS.md)
+- Current validation summary: [`TEST_RESULTS.md`](./TEST_RESULTS.md)
 
-## Plain-Language and UX Standard
+## Version
 
-This README and admin UX are intentionally written using plain-language principles inspired by:
-- [PlainLanguage.gov](https://www.plainlanguage.gov/)
-- [Digital.gov](https://digital.gov/)
-
-Goals:
-- short, task-first instructions
-- predictable sectioning
-- minimal jargon
-- quick scan for setup and troubleshooting
-
-## SEO Keywords
-
-UCP WooCommerce plugin, ACP WooCommerce adapter, OpenAI Agentic Commerce Protocol WooCommerce, WooCommerce checkout session API, WooCommerce agentic commerce integration, UCP connector.
+- Current plugin version: `1.3.0`
