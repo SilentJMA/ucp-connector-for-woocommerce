@@ -41,6 +41,29 @@ It keeps one normalized checkout-session model and maps it to WooCommerce carts 
 - Optional `UCP-Agent` domain allowlist with wildcard matching
 - Optional detached JWS request signature verification via `Request-Signature`
 
+## Security Model
+
+The plugin applies request security in layers:
+- API key authentication is required for ACP and UCP routes.
+- IP allowlist can restrict requests to known network sources.
+- Rate limiting can throttle abusive request patterns.
+- Agent allowlist can restrict requests to approved AI agent domains from `UCP-Agent`.
+- Optional detached JWS verification can cryptographically validate request integrity.
+
+## How to Restrict Access to Authorized AI Agents
+
+1. Go to plugin settings in wp-admin.
+2. Enable **Agent Domain Whitelist**.
+3. Add allowed domains (one per line), for example:
+   - `api.openai.com`
+   - `*.openai.com`
+4. Optionally enable **Request Signature** to require `Request-Signature` validation.
+5. Keep API key auth enabled and rotate keys when access changes.
+
+Required headers when agent restrictions are enabled:
+- `UCP-Agent: UCP/2026-01-11 profile="https://agent.example/.well-known/ucp"`
+- `Request-Signature: <detached-jws>` (if signature mode is enabled)
+
 ### WooCommerce Order Mapping
 - Creates WooCommerce orders from checkout sessions
 - Returns both `billing_address` and `shipping_address` in completion and order lookup responses
