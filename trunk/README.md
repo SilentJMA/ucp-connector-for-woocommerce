@@ -43,26 +43,73 @@ It keeps one normalized checkout-session model and maps it to WooCommerce carts 
 
 ## Security Model
 
-The plugin applies request security in layers:
-- API key authentication is required for ACP and UCP routes.
-- IP allowlist can restrict requests to known network sources.
-- Rate limiting can throttle abusive request patterns.
-- Agent allowlist can restrict requests to approved AI agent domains from `UCP-Agent`.
-- Optional detached JWS verification can cryptographically validate request integrity.
-
 ## How to Restrict Access to Authorized AI Agents
 
-1. Go to plugin settings in wp-admin.
-2. Enable **Agent Domain Whitelist**.
-3. Add allowed domains (one per line), for example:
-   - `api.openai.com`
-   - `*.openai.com`
-4. Optionally enable **Request Signature** to require `Request-Signature` validation.
-5. Keep API key auth enabled and rotate keys when access changes.
+The plugin provides multiple layers of security.
 
-Required headers when agent restrictions are enabled:
-- `UCP-Agent: UCP/2026-01-11 profile="https://agent.example/.well-known/ucp"`
-- `Request-Signature: <detached-jws>` (if signature mode is enabled)
+### 1. Domain Whitelist (Recommended)
+
+Enable **Agent Whitelist** and configure allowed domains:
+
+```text
+api.openai.com
+generativelanguage.googleapis.com
+api.anthropic.com
+api.cohere.ai
+```
+
+Agents must send a `UCP-Agent` header with their profile URL:
+
+```text
+UCP-Agent: UCP/2026-01-11 profile="https://api.openai.com/.well-known/ucp"
+```
+
+The plugin extracts the domain and checks it against the whitelist.
+
+### 2. Request Signature Verification (High Security)
+
+Enable **Require Agent Signature** for cryptographic verification:
+
+1. Agent signs the request body with its private key.
+2. Agent sends signature in `Request-Signature` header (detached JWS).
+3. Plugin fetches agent public keys from `/.well-known/ucp`.
+4. Plugin verifies the signature matches the request body.
+
+This provides:
+- Only authorized agents can call endpoints.
+- Requests cannot be tampered with in transit.
+- Non-repudiation for signed requests.
+
+### 3. Known AI Platforms (Default Whitelist)
+
+If whitelist is enabled but no domains are configured, these are allowed by default:
+
+| Platform | Domain |
+| --- | --- |
+| OpenAI | `api.openai.com` |
+| Google Gemini | `generativelanguage.googleapis.com` |
+| Anthropic | `api.anthropic.com` |
+| Cohere | `api.cohere.ai` |
+| Mistral | `api.mistral.ai` |
+| Amazon Bedrock | `inference.aws.amazon.com` |
+| Together AI | `api.together.xyz` |
+| Perplexity | `api.perplexity.ai` |
+
+### Security Configuration Examples
+
+Development (Open Access):
+- Agent Whitelist: Disabled
+- Require Signature: Disabled
+
+Production (Whitelist Only):
+- Agent Whitelist: Enabled
+- Whitelisted Domains: `api.openai.com`, `api.anthropic.com`
+- Require Signature: Disabled
+
+High Security (Whitelist + Signatures):
+- Agent Whitelist: Enabled
+- Whitelisted Domains: `api.openai.com`
+- Require Signature: Enabled
 
 ### WooCommerce Order Mapping
 - Creates WooCommerce orders from checkout sessions
