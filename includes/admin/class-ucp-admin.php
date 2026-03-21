@@ -15,6 +15,40 @@ if (! defined('ABSPATH')) {
  */
 class UCP_Adapter_Admin
 {
+	/**
+	 * Main menu slug.
+	 *
+	 * @var string
+	 */
+	private const MENU_SLUG = 'ucp-adapter-for-woocommerce';
+
+	/**
+	 * Settings slug.
+	 *
+	 * @var string
+	 */
+	private const SETTINGS_SLUG = 'ucp-adapter-settings';
+
+	/**
+	 * Security slug.
+	 *
+	 * @var string
+	 */
+	private const SECURITY_SLUG = 'ucp-adapter-security';
+
+	/**
+	 * Sessions slug.
+	 *
+	 * @var string
+	 */
+	private const SESSIONS_SLUG = 'ucp-adapter-sessions';
+
+	/**
+	 * Docs slug.
+	 *
+	 * @var string
+	 */
+	private const DOCS_SLUG = 'ucp-adapter-docs';
 
 	/**
 	 * Singleton.
@@ -56,38 +90,56 @@ class UCP_Adapter_Admin
 	{
 		add_menu_page(
 			__('UCP Connector for Woocommerce', 'ucp-adapter-for-woocommerce'),
-			__('UCP Connector for Woocommerce', 'ucp-adapter-for-woocommerce'),
+			__('UCP Connector', 'ucp-adapter-for-woocommerce'),
 			'manage_options',
-			'ucp-adapter-for-woocommerce',
-			array($this, 'render_settings_page'),
+			self::MENU_SLUG,
+			array($this, 'render_overview_page'),
 			'dashicons-store',
 			80
 		);
 
 		add_submenu_page(
-			'ucp-adapter-for-woocommerce',
-			__('Settings', 'ucp-adapter-for-woocommerce'),
-			__('Settings', 'ucp-adapter-for-woocommerce'),
+			self::MENU_SLUG,
+			__('Overview', 'ucp-adapter-for-woocommerce'),
+			__('Overview', 'ucp-adapter-for-woocommerce'),
 			'manage_options',
-			'ucp-adapter-for-woocommerce',
-			array($this, 'render_settings_page')
+			self::MENU_SLUG,
+			array($this, 'render_overview_page')
 		);
 
 		add_submenu_page(
-			'ucp-adapter-for-woocommerce',
+			self::MENU_SLUG,
 			__('Checkout Sessions', 'ucp-adapter-for-woocommerce'),
 			__('Checkout Sessions', 'ucp-adapter-for-woocommerce'),
 			'manage_options',
-			'ucp-adapter-sessions',
+			self::SESSIONS_SLUG,
 			array($this, 'render_sessions_page')
 		);
 
 		add_submenu_page(
-			'ucp-adapter-for-woocommerce',
+			self::MENU_SLUG,
+			__('Configuration', 'ucp-adapter-for-woocommerce'),
+			__('Configuration', 'ucp-adapter-for-woocommerce'),
+			'manage_options',
+			self::SETTINGS_SLUG,
+			array($this, 'render_settings_page')
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__('Security', 'ucp-adapter-for-woocommerce'),
+			__('Security', 'ucp-adapter-for-woocommerce'),
+			'manage_options',
+			self::SECURITY_SLUG,
+			array($this, 'render_security_page')
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
 			__('API Docs', 'ucp-adapter-for-woocommerce'),
 			__('API Docs', 'ucp-adapter-for-woocommerce'),
 			'manage_options',
-			'ucp-adapter-docs',
+			self::DOCS_SLUG,
 			array($this, 'render_docs_page')
 		);
 	}
@@ -156,55 +208,178 @@ class UCP_Adapter_Admin
 	}
 
 	/**
+	 * Render page title + nav shell open.
+	 *
+	 * @param string $title Page title.
+	 * @param string $description Page subtitle.
+	 * @param array  $badges Hero badges.
+	 * @return void
+	 */
+	private function render_shell_start($title, $description, $badges = array())
+	{
+		?>
+		<div class="wrap ucp-adapter-admin">
+			<h1 class="wp-heading-inline"><?php echo esc_html($title); ?></h1>
+			<hr class="wp-header-end" />
+		</div>
+		<div class="wrap ucp-adapter-admin ucp-admin-shell">
+			<nav class="ucp-admin-nav" aria-label="<?php esc_attr_e('UCP Admin Navigation', 'ucp-adapter-for-woocommerce'); ?>">
+				<?php foreach ($this->get_admin_nav_items() as $item) : ?>
+					<a href="<?php echo esc_url($item['url']); ?>" class="ucp-admin-nav-link <?php echo $item['active'] ? 'is-active' : ''; ?>"><?php echo esc_html($item['label']); ?></a>
+				<?php endforeach; ?>
+			</nav>
+			<div class="ucp-admin-hero">
+				<div class="ucp-admin-hero-copy">
+					<h2><?php echo esc_html($title); ?></h2>
+					<p><?php echo esc_html($description); ?></p>
+				</div>
+				<?php if (! empty($badges)) : ?>
+					<div class="ucp-admin-hero-badges">
+						<?php foreach ($badges as $badge) : ?>
+							<span class="ucp-pill"><?php echo esc_html($badge); ?></span>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+			</div>
+		<?php
+	}
+
+	/**
+	 * Close page shell.
+	 *
+	 * @return void
+	 */
+	private function render_shell_end()
+	{
+		echo '</div>';
+	}
+
+	/**
+	 * Build top navigation model.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function get_admin_nav_items()
+	{
+		$current = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : self::MENU_SLUG;
+		$items   = array(
+			self::MENU_SLUG     => __('Overview', 'ucp-adapter-for-woocommerce'),
+			self::SESSIONS_SLUG => __('Checkout Sessions', 'ucp-adapter-for-woocommerce'),
+			self::SETTINGS_SLUG => __('Configuration', 'ucp-adapter-for-woocommerce'),
+			self::SECURITY_SLUG => __('Security', 'ucp-adapter-for-woocommerce'),
+			self::DOCS_SLUG     => __('API Docs', 'ucp-adapter-for-woocommerce'),
+		);
+		$nav     = array();
+
+		foreach ($items as $slug => $label) {
+			$nav[] = array(
+				'label'  => $label,
+				'url'    => admin_url('admin.php?page=' . $slug),
+				'active' => $slug === $current,
+			);
+		}
+
+		return $nav;
+	}
+
+	/**
+	 * Render overview page.
+	 *
+	 * @return void
+	 */
+	public function render_overview_page()
+	{
+		$sessions = UCP_Adapter_Session_Handler::get_instance()->get_recent_sessions(40);
+		$stats    = array(
+			'total'              => 0,
+			'acp'                => 0,
+			'ucp'                => 0,
+			'ready_for_payment'  => 0,
+			'completed'          => 0,
+			'not_ready_for_payment' => 0,
+		);
+
+		foreach ($sessions as $session) {
+			$data = isset($session['data']) && is_array($session['data']) ? $session['data'] : array();
+			$stats['total']++;
+
+			$protocol = isset($data['protocol']) ? strtolower((string) $data['protocol']) : 'ucp';
+			$status   = isset($data['status']) ? (string) $data['status'] : 'not_ready_for_payment';
+
+			if ('acp' === $protocol) {
+				$stats['acp']++;
+			} else {
+				$stats['ucp']++;
+			}
+
+			if (isset($stats[ $status ])) {
+				$stats[ $status ]++;
+			}
+		}
+
+		$this->render_shell_start(
+			__('Overview', 'ucp-adapter-for-woocommerce'),
+			__('Use this dashboard to monitor ACP/UCP activity and jump to configuration and security tasks.', 'ucp-adapter-for-woocommerce'),
+			array('WooCommerce', 'ACP', 'UCP')
+		);
+		?>
+			<div class="ucp-overview-grid">
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Recent Sessions', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p class="ucp-metric-value"><?php echo esc_html((string) $stats['total']); ?></p>
+				</div>
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Completed', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p class="ucp-metric-value"><?php echo esc_html((string) $stats['completed']); ?></p>
+				</div>
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Ready For Payment', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p class="ucp-metric-value"><?php echo esc_html((string) $stats['ready_for_payment']); ?></p>
+				</div>
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Not Ready For Payment', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p class="ucp-metric-value"><?php echo esc_html((string) $stats['not_ready_for_payment']); ?></p>
+				</div>
+			</div>
+			<div class="ucp-admin-cards">
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Protocol Mix', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p><?php printf(esc_html__('ACP: %1$s · UCP: %2$s', 'ucp-adapter-for-woocommerce'), esc_html((string) $stats['acp']), esc_html((string) $stats['ucp'])); ?></p>
+				</div>
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Quick Actions', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p>
+						<a href="<?php echo esc_url(admin_url('admin.php?page=' . self::SESSIONS_SLUG)); ?>"><?php esc_html_e('View Sessions', 'ucp-adapter-for-woocommerce'); ?></a>
+						&nbsp;|&nbsp;
+						<a href="<?php echo esc_url(admin_url('admin.php?page=' . self::SETTINGS_SLUG)); ?>"><?php esc_html_e('Edit Configuration', 'ucp-adapter-for-woocommerce'); ?></a>
+						&nbsp;|&nbsp;
+						<a href="<?php echo esc_url(admin_url('admin.php?page=' . self::SECURITY_SLUG)); ?>"><?php esc_html_e('Review Security', 'ucp-adapter-for-woocommerce'); ?></a>
+					</p>
+				</div>
+			</div>
+		<?php
+		$this->render_shell_end();
+	}
+
+	/**
 	 * Render settings page.
 	 *
 	 * @return void
 	 */
 	public function render_settings_page()
 	{
-		$api_key = (string) get_option('ucp_adapter_api_key', '');
+		$this->render_shell_start(
+			__('Configuration', 'ucp-adapter-for-woocommerce'),
+			__('Manage protocol behavior, merchant metadata, and checkout links shown to agent clients.', 'ucp-adapter-for-woocommerce')
+		);
 		?>
-		<div class="wrap ucp-adapter-admin">
-			<h1 class="wp-heading-inline"><?php esc_html_e('UCP Connector for Woocommerce', 'ucp-adapter-for-woocommerce'); ?></h1>
-			<hr class="wp-header-end" />
-		</div>
-		<div class="wrap ucp-adapter-admin ucp-admin-shell">
-			<div class="ucp-admin-hero">
-				<div class="ucp-admin-hero-copy">
-					<h2><?php esc_html_e('UCP Connector for Woocommerce', 'ucp-adapter-for-woocommerce'); ?></h2>
-					<p><?php esc_html_e('Configure protocol support, security controls, and checkout metadata for commerce agents.', 'ucp-adapter-for-woocommerce'); ?></p>
-				</div>
-				<div class="ucp-admin-hero-badges">
-					<span class="ucp-pill"><?php esc_html_e('WooCommerce', 'ucp-adapter-for-woocommerce'); ?></span>
-					<span class="ucp-pill"><?php esc_html_e('UCP', 'ucp-adapter-for-woocommerce'); ?></span>
-					<span class="ucp-pill"><?php esc_html_e('ACP', 'ucp-adapter-for-woocommerce'); ?></span>
-				</div>
-			</div>
-			<div class="ucp-admin-cards">
-				<div class="ucp-admin-card">
-					<h3><?php esc_html_e('Security Model', 'ucp-adapter-for-woocommerce'); ?></h3>
-					<p><?php esc_html_e('Supports API keys, IP allowlists, agent domain allowlists, and optional detached JWS request signatures.', 'ucp-adapter-for-woocommerce'); ?></p>
-				</div>
-				<div class="ucp-admin-card">
-					<h3><?php esc_html_e('Protocol Surface', 'ucp-adapter-for-woocommerce'); ?></h3>
-					<p><?php esc_html_e('ACP and UCP run on one normalized checkout session model with merchant-authoritative recalculation.', 'ucp-adapter-for-woocommerce'); ?></p>
-				</div>
-			</div>
-
 			<form method="post" action="options.php" class="ucp-settings-form">
 				<?php
 				settings_fields('ucp_adapter_settings');
 				do_settings_sections('ucp_adapter_settings');
 				?>
 				<table class="form-table ucp-form-table">
-					<tr><th colspan="2"><h2><?php esc_html_e('Core Settings', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
-					<tr>
-						<th scope="row"><label for="ucp_adapter_api_key"><?php esc_html_e('API Key', 'ucp-adapter-for-woocommerce'); ?></label></th>
-						<td>
-							<input type="text" id="ucp_adapter_api_key" name="ucp_adapter_api_key" class="regular-text" value="<?php echo esc_attr($api_key); ?>" readonly />
-							<button type="button" class="button button-secondary" id="regenerate-api-key"><?php esc_html_e('Regenerate', 'ucp-adapter-for-woocommerce'); ?></button>
-						</td>
-					</tr>
+					<tr><th colspan="2"><h2><?php esc_html_e('Protocol Configuration', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
 					<tr>
 						<th scope="row"><label for="ucp_adapter_session_timeout"><?php esc_html_e('Session Timeout (seconds)', 'ucp-adapter-for-woocommerce'); ?></label></th>
 						<td><input type="number" id="ucp_adapter_session_timeout" name="ucp_adapter_session_timeout" class="small-text" value="<?php echo esc_attr(get_option('ucp_adapter_session_timeout', 3600)); ?>" /></td>
@@ -216,6 +391,7 @@ class UCP_Adapter_Admin
 							<label><input type="checkbox" name="ucp_adapter_protocol_acp_enabled" value="1" <?php checked((int) get_option('ucp_adapter_protocol_acp_enabled', 1), 1); ?> /> <?php esc_html_e('Enable ACP', 'ucp-adapter-for-woocommerce'); ?></label>
 						</td>
 					</tr>
+					<tr><th colspan="2"><h2><?php esc_html_e('Merchant Checkout', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
 					<tr>
 						<th scope="row"><label for="ucp_adapter_store_name"><?php esc_html_e('Store Display Name', 'ucp-adapter-for-woocommerce'); ?></label></th>
 						<td><input type="text" id="ucp_adapter_store_name" name="ucp_adapter_store_name" class="regular-text" value="<?php echo esc_attr(get_option('ucp_adapter_store_name', get_bloginfo('name'))); ?>" /></td>
@@ -240,7 +416,46 @@ class UCP_Adapter_Admin
 						<th scope="row"><?php esc_html_e('Delegated Payment', 'ucp-adapter-for-woocommerce'); ?></th>
 						<td><label><input type="checkbox" name="ucp_adapter_enable_delegated_payment" value="1" <?php checked((int) get_option('ucp_adapter_enable_delegated_payment', 0), 1); ?> /> <?php esc_html_e('Enable delegated payment compatibility mode', 'ucp-adapter-for-woocommerce'); ?></label></td>
 					</tr>
+				</table>
+
+				<div class="ucp-form-actions">
+					<?php submit_button(__('Save Configuration', 'ucp-adapter-for-woocommerce')); ?>
+				</div>
+			</form>
+		<?php
+		$this->render_shell_end();
+	}
+
+	/**
+	 * Render security page.
+	 *
+	 * @return void
+	 */
+	public function render_security_page()
+	{
+		$api_key = (string) get_option('ucp_adapter_api_key', '');
+
+		$this->render_shell_start(
+			__('Security', 'ucp-adapter-for-woocommerce'),
+			__('Control authentication, rate limiting, agent authorization, signatures, and network access.', 'ucp-adapter-for-woocommerce')
+		);
+		?>
+			<form method="post" action="options.php" class="ucp-settings-form">
+				<?php
+				settings_fields('ucp_adapter_settings');
+				do_settings_sections('ucp_adapter_settings');
+				?>
+				<table class="form-table ucp-form-table">
+					<tr><th colspan="2"><h2><?php esc_html_e('API Authentication', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
 					<tr>
+						<th scope="row"><label for="ucp_adapter_api_key"><?php esc_html_e('API Key', 'ucp-adapter-for-woocommerce'); ?></label></th>
+						<td>
+							<input type="text" id="ucp_adapter_api_key" name="ucp_adapter_api_key" class="regular-text" value="<?php echo esc_attr($api_key); ?>" readonly />
+							<button type="button" class="button button-secondary" id="regenerate-api-key"><?php esc_html_e('Regenerate', 'ucp-adapter-for-woocommerce'); ?></button>
+						</td>
+					</tr>
+					<tr><th colspan="2"><h2><?php esc_html_e('Rate Limiting', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
+					<tr class="ucp-rate-limit-row">
 						<th scope="row"><?php esc_html_e('Rate Limiting', 'ucp-adapter-for-woocommerce'); ?></th>
 						<td>
 							<label><input type="checkbox" name="ucp_adapter_rate_limit_enabled" value="1" <?php checked((int) get_option('ucp_adapter_rate_limit_enabled', 0), 1); ?> /> <?php esc_html_e('Enable request rate limiting', 'ucp-adapter-for-woocommerce'); ?></label><br />
@@ -268,7 +483,7 @@ class UCP_Adapter_Admin
 							<label><input type="checkbox" name="ucp_adapter_require_agent_signature" value="1" <?php checked((int) get_option('ucp_adapter_require_agent_signature', 0), 1); ?> /> <?php esc_html_e('Require `Request-Signature` detached JWS verification using agent profile signing keys', 'ucp-adapter-for-woocommerce'); ?></label>
 						</td>
 					</tr>
-					<tr><th colspan="2"><h2><?php esc_html_e('Network Guards', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
+					<tr><th colspan="2"><h2><?php esc_html_e('Network Guard', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
 					<tr>
 						<th scope="row"><label for="ucp_adapter_ip_whitelist"><?php esc_html_e('IP Allowlist', 'ucp-adapter-for-woocommerce'); ?></label></th>
 						<td>
@@ -277,13 +492,12 @@ class UCP_Adapter_Admin
 						</td>
 					</tr>
 				</table>
-
 				<div class="ucp-form-actions">
-					<?php submit_button(__('Save Settings', 'ucp-adapter-for-woocommerce')); ?>
+					<?php submit_button(__('Save Security Settings', 'ucp-adapter-for-woocommerce')); ?>
 				</div>
 			</form>
-		</div>
 		<?php
+		$this->render_shell_end();
 	}
 
 	/**
@@ -294,18 +508,12 @@ class UCP_Adapter_Admin
 	public function render_sessions_page()
 	{
 		$sessions = UCP_Adapter_Session_Handler::get_instance()->get_recent_sessions(100);
+
+		$this->render_shell_start(
+			__('Checkout Sessions', 'ucp-adapter-for-woocommerce'),
+			__('Live view of normalized checkout sessions across ACP and UCP routes.', 'ucp-adapter-for-woocommerce')
+		);
 		?>
-		<div class="wrap ucp-adapter-admin">
-			<h1 class="wp-heading-inline"><?php esc_html_e('Recent Checkout Sessions', 'ucp-adapter-for-woocommerce'); ?></h1>
-			<hr class="wp-header-end" />
-		</div>
-		<div class="wrap ucp-adapter-admin ucp-admin-shell">
-			<div class="ucp-admin-hero">
-				<div class="ucp-admin-hero-copy">
-					<h2><?php esc_html_e('Recent Checkout Sessions', 'ucp-adapter-for-woocommerce'); ?></h2>
-					<p><?php esc_html_e('Live view of normalized checkout sessions across ACP and UCP routes.', 'ucp-adapter-for-woocommerce'); ?></p>
-				</div>
-			</div>
 			<div class="ucp-table-card ucp-table-wrap">
 				<table class="widefat striped">
 				<thead>
@@ -341,8 +549,8 @@ class UCP_Adapter_Admin
 				</tbody>
 			</table>
 			</div>
-		</div>
 		<?php
+		$this->render_shell_end();
 	}
 
 	/**
@@ -354,37 +562,30 @@ class UCP_Adapter_Admin
 	{
 		$acp_base = rest_url('acp/v1');
 		$ucp_base = rest_url('ucp/v1');
+
+		$this->render_shell_start(
+			__('API Docs', 'ucp-adapter-for-woocommerce'),
+			__('ACP-native and UCP compatibility endpoints are exposed over one WooCommerce-backed checkout model.', 'ucp-adapter-for-woocommerce')
+		);
 		?>
-		<div class="wrap ucp-adapter-admin">
-			<h1 class="wp-heading-inline"><?php esc_html_e('API Documentation', 'ucp-adapter-for-woocommerce'); ?></h1>
-			<hr class="wp-header-end" />
-		</div>
-		<div class="wrap ucp-adapter-admin ucp-admin-shell ucp-docs-section">
-			<div class="ucp-admin-hero">
-				<div class="ucp-admin-hero-copy">
-					<h2><?php esc_html_e('API Documentation', 'ucp-adapter-for-woocommerce'); ?></h2>
-					<p><?php esc_html_e('This adapter exposes ACP-native checkout routes and UCP legacy compatibility routes over the same WooCommerce session model.', 'ucp-adapter-for-woocommerce'); ?></p>
-				</div>
-			</div>
-
 			<div class="ucp-doc-card">
-			<h2><?php esc_html_e('Authentication', 'ucp-adapter-for-woocommerce'); ?></h2>
-			<p><code>Authorization: Bearer &lt;api_key&gt;</code></p>
-			<p><code>X-UCP-API-Key: &lt;api_key&gt;</code> <?php esc_html_e('or', 'ucp-adapter-for-woocommerce'); ?> <code>X-ACP-API-Key: &lt;api_key&gt;</code></p>
-			<p><code>UCP-Agent: UCP/2026-01-11 profile="https://api.openai.com/.well-known/ucp"</code></p>
-			<p><code>Request-Signature: &lt;detached-jws&gt;</code></p>
+				<h2><?php esc_html_e('Authentication', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<p><code>Authorization: Bearer &lt;api_key&gt;</code></p>
+				<p><code>X-UCP-API-Key: &lt;api_key&gt;</code> <?php esc_html_e('or', 'ucp-adapter-for-woocommerce'); ?> <code>X-ACP-API-Key: &lt;api_key&gt;</code></p>
+				<p><code>UCP-Agent: UCP/2026-01-11 profile="https://api.openai.com/.well-known/ucp"</code></p>
+				<p><code>Request-Signature: &lt;detached-jws&gt;</code></p>
 
-			<h2><?php esc_html_e('ACP Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
-			<pre><code><?php echo esc_html("POST {$acp_base}/checkout_sessions\nPOST {$acp_base}/checkout_sessions/{id}\nGET {$acp_base}/checkout_sessions/{id}\nPOST {$acp_base}/checkout_sessions/{id}/complete\nPOST {$acp_base}/checkout_sessions/{id}/cancel\nGET {$acp_base}/capabilities"); ?></code></pre>
-			<p><?php esc_html_e('For capability negotiation, include an optional `platform_profile.ucp.capabilities` array in create-session requests.', 'ucp-adapter-for-woocommerce'); ?></p>
+				<h2><?php esc_html_e('ACP Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<pre><code><?php echo esc_html("POST {$acp_base}/checkout_sessions\nPOST {$acp_base}/checkout_sessions/{id}\nGET {$acp_base}/checkout_sessions/{id}\nPOST {$acp_base}/checkout_sessions/{id}/complete\nPOST {$acp_base}/checkout_sessions/{id}/cancel\nGET {$acp_base}/capabilities"); ?></code></pre>
+				<p><?php esc_html_e('For capability negotiation, include an optional `platform_profile.ucp.capabilities` array in create-session requests.', 'ucp-adapter-for-woocommerce'); ?></p>
 
-			<h2><?php esc_html_e('UCP Compatibility Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
-			<pre><code><?php echo esc_html("POST {$ucp_base}/session\nPUT {$ucp_base}/update/{id}\nGET {$ucp_base}/status/{id}\nPOST {$ucp_base}/complete/{id}\nGET {$ucp_base}/capabilities"); ?></code></pre>
+				<h2><?php esc_html_e('UCP Compatibility Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<pre><code><?php echo esc_html("POST {$ucp_base}/session\nPUT {$ucp_base}/update/{id}\nGET {$ucp_base}/status/{id}\nPOST {$ucp_base}/complete/{id}\nGET {$ucp_base}/capabilities"); ?></code></pre>
 
-			<h2><?php esc_html_e('Common Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
-			<pre><code><?php echo esc_html("GET {$acp_base}/product/search?search=shirt\nGET {$acp_base}/orders/{order_id}\nGET {$acp_base}/sessions"); ?></code></pre>
+				<h2><?php esc_html_e('Common Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<pre><code><?php echo esc_html("GET {$acp_base}/product/search?search=shirt\nGET {$acp_base}/orders/{order_id}\nGET {$acp_base}/sessions"); ?></code></pre>
 			</div>
-		</div>
 		<?php
+		$this->render_shell_end();
 	}
 }

@@ -27,6 +27,37 @@
 	border-radius: 18px;
 }
 
+.ucp-admin-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.ucp-admin-nav-link {
+	display: inline-flex;
+	align-items: center;
+	padding: 8px 12px;
+	border: 1px solid #c7d4e6;
+	border-radius: 999px;
+	background: #fff;
+	color: #234;
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.ucp-admin-nav-link:hover {
+	border-color: #91add1;
+	color: #123;
+}
+
+.ucp-admin-nav-link.is-active {
+	background: #0f5aa9;
+	border-color: #0f5aa9;
+	color: #fff;
+}
+
 .ucp-admin-hero {
 	background: linear-gradient(135deg, #0f5aa9 0%, #1f7ae0 45%, #25a3dc 100%);
 	border-radius: 16px;
@@ -81,6 +112,21 @@
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	gap: 14px;
 	margin: 16px 0 20px;
+}
+
+.ucp-overview-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 14px;
+	margin: 16px 0 8px;
+}
+
+.ucp-metric-value {
+	margin: 8px 0 0;
+	font-size: 26px;
+	line-height: 1.1;
+	font-weight: 700;
+	color: #0f5aa9;
 }
 
 .ucp-admin-card,
@@ -146,6 +192,22 @@
 	border-radius: 8px;
 }
 
+.ucp-rate-limit-row td > label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 14px 8px 0;
+}
+
+.ucp-rate-limit-row td > label:first-child {
+	display: flex;
+	margin: 0 0 10px;
+}
+
+.ucp-rate-limit-row .small-text {
+	min-width: 74px;
+}
+
 #ucp_adapter_api_key {
 	background: #f8fbff;
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -162,6 +224,11 @@
 	border-top: 1px solid var(--ucp-line);
 	padding-top: 14px;
 	margin-top: 12px;
+}
+
+.ucp-form-actions p.submit {
+	margin: 0;
+	padding: 0;
 }
 
 .ucp-form-actions .button-primary {
@@ -271,6 +338,15 @@
 		padding: 14px;
 	}
 
+	.ucp-admin-nav {
+		gap: 6px;
+	}
+
+	.ucp-admin-nav-link {
+		padding: 6px 10px;
+		font-size: 11px;
+	}
+
 	.ucp-admin-hero {
 		flex-direction: column;
 		padding: 18px;
@@ -278,6 +354,11 @@
 
 	.ucp-form-table th {
 		width: auto;
+	}
+
+	.ucp-rate-limit-row td > label {
+		display: flex;
+		margin: 0 0 8px;
 	}
 
 	.ucp-form-actions {

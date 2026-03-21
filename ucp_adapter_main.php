@@ -4,7 +4,7 @@
  * Plugin Name: UCP Connector for Woocommerce
  * Plugin URI: https://wordpress.org/plugins/ucp-adapter-for-woocommerce
  * Description: WooCommerce adapter for UCP and OpenAI ACP checkout sessions.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Requires at least: 6.9
  * Requires PHP: 8.0
  * Author: Mohamed Ayoub Jabane
@@ -21,7 +21,7 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
-define('UCP_ADAPTER_VERSION', '1.0.3');
+define('UCP_ADAPTER_VERSION', '1.0.4');
 define('UCP_ADAPTER_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UCP_ADAPTER_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('UCP_ADAPTER_PLUGIN_BASENAME', plugin_basename(__FILE__));

@@ -117,10 +117,15 @@ High Security (Whitelist + Signatures):
 - Exposes order IDs and totals for follow-up workflows
 
 ### Admin Experience
-- Settings for protocol toggles, API key, and timeouts
-- Merchant metadata and policy link configuration
-- Security section for rate limits, IP allowlists, agent controls, and signatures
-- Sessions view for recent checkout lifecycle monitoring
+- Reworked admin information architecture with dedicated pages:
+  - Overview
+  - Checkout Sessions
+  - Configuration
+  - Security
+  - API Docs
+- Unified in-page navigation across plugin screens
+- Responsive sessions table optimized for long session identifiers
+- Separated configuration controls from security controls for faster operations
 
 ## Installation
 
@@ -150,4 +155,4 @@ bash scripts/smoke-test.sh
 
 ## Version
 
-- Current plugin version: `1.0.1`
+- Current plugin version: `1.0.4`

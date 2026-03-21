@@ -4,7 +4,7 @@ Tags: api, rest, commerce, ucp, acp, woocommerce
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 Requires Plugins: woocommerce
 License: UCP Connector Non-Commercial License v1.0
 License URI: https://github.com/SilentJMA/ucp-connector-for-woocommerce/blob/main/LICENSE
