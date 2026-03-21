@@ -4,7 +4,7 @@ Tags: api, rest, commerce, ucp, acp, woocommerce
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.3.0
+Stable tag: 1.0.0
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -56,6 +56,12 @@ Shared
 5. Call endpoints with the API key
 
 == Changelog ==
+
+= 1.0.0 =
+* Official 1.0.0 release.
+* Unified ACP and UCP checkout session APIs on a normalized WooCommerce model.
+* Added agent authorization controls, optional signature verification, and admin security configuration.
+* Added local fixtures and smoke test runner for ACP/UCP flow validation.
 
 = 1.3.0 =
 * Added agent security model controls.
