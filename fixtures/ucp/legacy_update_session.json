@@ -1,0 +1,9 @@
+{
+  "action": "set_buyer",
+  "data": {
+    "first_name": "Grace",
+    "last_name": "Hopper",
+    "email": "grace.updated@example.com",
+    "phone": "+49333333333"
+  }
+}

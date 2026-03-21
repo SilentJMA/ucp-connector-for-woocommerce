@@ -1,0 +1,36 @@
+{
+  "buyer": {
+    "first_name": "Ada",
+    "last_name": "Lovelace",
+    "email": "ada.complete@example.com",
+    "phone": "+49222222222"
+  },
+  "fulfillment_address": {
+    "address_1": "Checkout Street 2",
+    "city": "Berlin",
+    "state": "BE",
+    "postcode": "10115",
+    "country": "DE"
+  },
+  "payment_method": "bacs",
+  "payment": {
+    "handler_id": "merchant_default",
+    "token": "fixture-token-not-real"
+  },
+  "billing_address": {
+    "address_1": "Billing Street 20",
+    "address_2": "2nd Floor",
+    "city": "Berlin",
+    "state": "BE",
+    "postcode": "10117",
+    "country": "DE"
+  },
+  "shipping_address": {
+    "address_1": "Shipping Street 99",
+    "address_2": "",
+    "city": "Berlin",
+    "state": "BE",
+    "postcode": "10117",
+    "country": "DE"
+  }
+}

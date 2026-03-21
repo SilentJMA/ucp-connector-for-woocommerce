@@ -1,0 +1,12 @@
+{
+  "buyer": {
+    "first_name": "Ada",
+    "last_name": "Lovelace",
+    "email": "ada.updated@example.com",
+    "phone": "+49111111111"
+  },
+  "fulfillment_option_id": "standard",
+  "metadata": {
+    "agent_trace_id": "fixture-acp-update-001"
+  }
+}

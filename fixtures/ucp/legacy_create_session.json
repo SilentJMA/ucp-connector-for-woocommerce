@@ -1,0 +1,17 @@
+{
+  "platform": "woocommerce",
+  "user_data": {
+    "first_name": "Grace",
+    "last_name": "Hopper",
+    "email": "grace@example.com"
+  },
+  "line_items": [
+    {
+      "product_id": 1,
+      "quantity": 1
+    }
+  ],
+  "metadata": {
+    "agent_trace_id": "fixture-ucp-create-001"
+  }
+}

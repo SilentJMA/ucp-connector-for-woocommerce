@@ -1,0 +1,39 @@
+{
+  "platform_profile": {
+    "ucp": {
+      "capabilities": [
+        {
+          "name": "dev.ucp.shopping.checkout",
+          "version": "2026-01-11"
+        },
+        {
+          "name": "dev.ucp.shopping.fulfillment",
+          "version": "2026-01-11",
+          "extends": "dev.ucp.shopping.checkout"
+        }
+      ]
+    }
+  },
+  "buyer": {
+    "first_name": "Ada",
+    "last_name": "Lovelace",
+    "email": "ada@example.com",
+    "phone": "+49123456789"
+  },
+  "line_items": [
+    {
+      "product_id": 1,
+      "quantity": 1
+    }
+  ],
+  "fulfillment_address": {
+    "address_1": "Example Street 1",
+    "city": "Berlin",
+    "state": "BE",
+    "postcode": "10115",
+    "country": "DE"
+  },
+  "metadata": {
+    "agent_trace_id": "fixture-acp-create-001"
+  }
+}
