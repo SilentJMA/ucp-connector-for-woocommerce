@@ -1,25 +1,50 @@
-BSD 2-Clause License
+UCP Connector Non-Commercial License v1.0
 
-Copyright (c) 2026, Ospeks
+Copyright (c) 2026, Mohamed Ayoub Jabane
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+Permission is granted to any person obtaining a copy of this software and
+associated documentation files (the "Software") to use, reproduce, modify,
+maintain, and redistribute the Software in source or binary form, provided that
+all of the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
+   list of conditions, and the disclaimers below.
 
 2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
+   this list of conditions, and the disclaimers below in the documentation
    and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+3. Commercial use is not permitted. "Commercial use" includes, without
+   limitation: selling or licensing the Software for a fee; offering paid
+   hosting, managed services, or support primarily for this Software; bundling
+   the Software in a paid product or paid service; or otherwise monetizing the
+   Software directly.
+
+4. Neither the name of the copyright holder nor contributor names may be used
+   to endorse or promote derived products without prior written permission.
+
+5. Any modification or redistribution must clearly state that changes were made.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, SECURITY, REGULATORY
+COMPLIANCE, OR DATA-PROTECTION FITNESS.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOSS OF PROFITS, LOSS OF DATA,
+BUSINESS INTERRUPTION, SECURITY BREACH, OR REGULATORY PENALTIES.
+
+YOU ARE SOLELY RESPONSIBLE FOR YOUR DEPLOYMENT, OPERATION, SECURITY HARDENING,
+PAYMENT PROCESSING COMPLIANCE, AND LEGAL/REGULATORY COMPLIANCE.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IF YOU USE, REDISTRIBUTE,
+OR OPERATE THIS SOFTWARE, YOU AGREE TO DEFEND, INDEMNIFY, AND HOLD HARMLESS THE
+COPYRIGHT HOLDER AND CONTRIBUTORS FROM AND AGAINST ANY CLAIMS, LIABILITIES,
+LOSSES, DAMAGES, COSTS, AND EXPENSES (INCLUDING REASONABLE ATTORNEYS' FEES)
+ARISING FROM YOUR USE, DISTRIBUTION, MODIFICATION, HOSTING, OR OPERATION OF
+THE SOFTWARE.

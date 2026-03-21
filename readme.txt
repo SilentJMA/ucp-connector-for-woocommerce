@@ -4,10 +4,10 @@ Tags: api, rest, commerce, ucp, acp, woocommerce
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 Requires Plugins: woocommerce
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: UCP Connector Non-Commercial License v1.0
+License URI: https://github.com/SilentJMA/ucp-connector-for-woocommerce/blob/main/LICENSE
 
 WooCommerce adapter for UCP and OpenAI Agentic Commerce Protocol (ACP) checkout sessions.
 
