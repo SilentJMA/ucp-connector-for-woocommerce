@@ -1,0 +1,41 @@
+name: Metadata Consistency
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate version and license metadata
+        run: |
+          set -euo pipefail
+
+          root_version="$(sed -n 's/^ \* Version: //p' ucp_adapter_main.php | head -n1)"
+          trunk_version="$(sed -n 's/^ \* Version: //p' trunk/ucp_adapter_main.php | head -n1)"
+          root_const="$(sed -n \"s/^define('UCP_ADAPTER_VERSION', '\\(.*\\)');$/\\1/p\" ucp_adapter_main.php | head -n1)"
+          trunk_const="$(sed -n \"s/^define('UCP_ADAPTER_VERSION', '\\(.*\\)');$/\\1/p\" trunk/ucp_adapter_main.php | head -n1)"
+          root_tag="$(sed -n 's/^Stable tag: //p' readme.txt | head -n1)"
+          trunk_tag="$(sed -n 's/^Stable tag: //p' trunk/readme.txt | head -n1)"
+
+          [[ -n "$root_version" && -n "$trunk_version" && -n "$root_const" && -n "$trunk_const" && -n "$root_tag" && -n "$trunk_tag" ]]
+          [[ "$root_version" == "$trunk_version" ]]
+          [[ "$root_version" == "$root_const" ]]
+          [[ "$root_version" == "$trunk_const" ]]
+          [[ "$root_version" == "$root_tag" ]]
+          [[ "$root_tag" == "$trunk_tag" ]]
+
+          root_license="$(sed -n 's/^ \* License: //p' ucp_adapter_main.php | head -n1)"
+          trunk_license="$(sed -n 's/^ \* License: //p' trunk/ucp_adapter_main.php | head -n1)"
+          readme_license="$(sed -n 's/^License: //p' readme.txt | head -n1)"
+          trunk_readme_license="$(sed -n 's/^License: //p' trunk/readme.txt | head -n1)"
+
+          [[ "$root_license" == "$trunk_license" ]]
+          [[ "$root_license" == "$readme_license" ]]
+          [[ "$readme_license" == "$trunk_readme_license" ]]

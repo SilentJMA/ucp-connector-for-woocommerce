@@ -1,0 +1,46 @@
+name: Root-Trunk Sync Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify root and trunk are in sync
+        run: |
+          set -euo pipefail
+
+          paths=(
+            "assets"
+            "fixtures"
+            "includes"
+            "scripts"
+            "README.md"
+            "TEST_RESULTS.md"
+            "readme.txt"
+            "ucp_adapter_main.php"
+          )
+
+          for p in "${paths[@]}"; do
+            if [[ ! -e "$p" ]]; then
+              echo "Missing root path: $p"
+              exit 1
+            fi
+            if [[ ! -e "trunk/$p" ]]; then
+              echo "Missing trunk path: trunk/$p"
+              exit 1
+            fi
+
+            if [[ -d "$p" ]]; then
+              diff -qr "$p" "trunk/$p"
+            else
+              diff -u "$p" "trunk/$p"
+            fi
+          done

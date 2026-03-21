@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build plugin ZIP
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          STAGE="$RUNNER_TEMP/ucp-adapter-for-woocommerce"
+          mkdir -p "$STAGE"
+
+          rsync -a ./ "$STAGE/" \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "trunk/" \
+            --exclude ".DS_Store"
+
+          (cd "$RUNNER_TEMP" && zip -r "ucp-connector-for-woocommerce-${VERSION}.zip" "ucp-adapter-for-woocommerce")
+          echo "ZIP_PATH=$RUNNER_TEMP/ucp-connector-for-woocommerce-${VERSION}.zip" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: ${{ env.ZIP_PATH }}

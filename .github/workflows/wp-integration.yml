@@ -1,0 +1,109 @@
+name: WordPress Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+          MYSQL_USER: wp
+          MYSQL_PASSWORD: wp
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Install WP-CLI
+        run: |
+          set -euo pipefail
+          curl -fsSL -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          php wp-cli.phar --info
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+
+      - name: Provision WordPress + WooCommerce
+        env:
+          WP_ROOT: /tmp/wp
+        run: |
+          set -euo pipefail
+
+          wp core download --path="$WP_ROOT" --allow-root
+          wp config create \
+            --path="$WP_ROOT" \
+            --dbname=wordpress \
+            --dbuser=wp \
+            --dbpass=wp \
+            --dbhost=127.0.0.1 \
+            --allow-root
+          wp core install \
+            --path="$WP_ROOT" \
+            --url="http://127.0.0.1:8080" \
+            --title="UCP Test Store" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=admin@example.com \
+            --skip-email \
+            --allow-root
+
+          mkdir -p "$WP_ROOT/wp-content/plugins"
+          ln -s "$GITHUB_WORKSPACE" "$WP_ROOT/wp-content/plugins/ucp-adapter-for-woocommerce"
+
+          wp plugin install woocommerce --activate --path="$WP_ROOT" --allow-root
+          wp plugin activate ucp-adapter-for-woocommerce --path="$WP_ROOT" --allow-root
+
+          wp rewrite structure "/%postname%/" --hard --path="$WP_ROOT" --allow-root
+
+          API_KEY="$(openssl rand -hex 24)"
+          wp option update ucp_adapter_api_key "$API_KEY" --path="$WP_ROOT" --allow-root
+          echo "API_KEY=$API_KEY" >> "$GITHUB_ENV"
+
+          PRODUCT_ID="$(wp post create --post_type=product --post_status=publish --post_title='Smoke Product' --porcelain --path="$WP_ROOT" --allow-root)"
+          wp post meta update "$PRODUCT_ID" _regular_price "29.95" --path="$WP_ROOT" --allow-root
+          wp post meta update "$PRODUCT_ID" _price "29.95" --path="$WP_ROOT" --allow-root
+          wp post meta update "$PRODUCT_ID" _stock_status "instock" --path="$WP_ROOT" --allow-root
+          echo "PRODUCT_ID=$PRODUCT_ID" >> "$GITHUB_ENV"
+
+      - name: Start test server
+        env:
+          WP_ROOT: /tmp/wp
+        run: |
+          set -euo pipefail
+          php -S 127.0.0.1:8080 -t "$WP_ROOT" > /tmp/wp-server.log 2>&1 &
+          echo $! > /tmp/wp-server.pid
+          sleep 5
+          curl -fsSL "http://127.0.0.1:8080/wp-json/" >/dev/null
+
+      - name: Run ACP/UCP smoke tests
+        env:
+          BASE_URL: http://127.0.0.1:8080
+        run: |
+          set -euo pipefail
+          BASE_URL="$BASE_URL" API_KEY="$API_KEY" PRODUCT_ID="$PRODUCT_ID" bash scripts/smoke-test.sh
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp-server-log
+          path: /tmp/wp-server.log
