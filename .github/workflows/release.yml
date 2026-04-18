@@ -33,7 +33,7 @@ jobs:
           echo "ZIP_PATH=$RUNNER_TEMP/ucp-connector-for-woocommerce-${VERSION}.zip" >> "$GITHUB_ENV"
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: ${{ env.ZIP_PATH }}
