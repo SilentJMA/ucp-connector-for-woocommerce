@@ -77,6 +77,13 @@ class UCP_Adapter_Security
 
 			if ('' !== trim($value)) {
 				$provided = trim($value);
+				if ('query' === $source) {
+					_doing_it_wrong(
+						__METHOD__,
+						__('Passing the API key as a query parameter is deprecated and will be removed in a future version. Use the Authorization, X-UCP-API-Key, or X-ACP-API-Key header instead.', 'ucp-adapter-for-woocommerce'),
+						'1.0.5'
+					);
+				}
 				break;
 			}
 		}

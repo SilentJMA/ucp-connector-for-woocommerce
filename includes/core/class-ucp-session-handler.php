@@ -471,6 +471,28 @@ class UCP_Adapter_Session_Handler
 				continue;
 			}
 
+			if ($product->managing_stock()) {
+				$stock_qty = $product->get_stock_quantity();
+				if (null !== $stock_qty && $quantity > $stock_qty) {
+					$messages[] = array(
+						'type'     => 'error',
+						'code'     => 'insufficient_stock',
+						'path'     => '$.line_items',
+						'content'  => sprintf(
+							__('Only %1$d units of %2$s are available (requested %3$d).', 'ucp-adapter-for-woocommerce'),
+							$stock_qty,
+							$product->get_name(),
+							$quantity
+						),
+						'severity' => 'recoverable',
+					);
+					$quantity = $stock_qty;
+					if ($quantity < 1) {
+						continue;
+					}
+				}
+			}
+
 			$base_unit  = (float) wc_get_price_excluding_tax($product, array('qty' => 1));
 			$total_unit = (float) wc_get_price_including_tax($product, array('qty' => 1));
 			$line_base  = $base_unit * $quantity;
@@ -493,6 +515,18 @@ class UCP_Adapter_Session_Handler
 				'tax_amount'     => wc_format_decimal($line_tax, 2),
 				'total_amount'   => wc_format_decimal($line_total, 2),
 			);
+		}
+
+		$coupon_code = isset($payload['metadata']['coupon_code']) ? (string) $payload['metadata']['coupon_code'] : '';
+		$coupon_result = $this->apply_coupon($coupon_code, $line_items, $item_subtotal);
+		$discounts = $coupon_result['discount'];
+		$line_items = $coupon_result['line_items'];
+		if (! empty($coupon_result['message'])) {
+			$messages[] = $coupon_result['message'];
+		}
+		if ($coupon_result['applied']) {
+			$payload['metadata']['coupon_applied'] = true;
+			$payload['metadata']['coupon_discount'] = wc_format_decimal($discounts, 2);
 		}
 
 		$payload['line_items']          = $line_items;
@@ -544,6 +578,99 @@ class UCP_Adapter_Session_Handler
 		}
 
 		return $payload;
+	}
+
+	/**
+	 * Validate and apply a WooCommerce coupon code.
+	 *
+	 * @param string $coupon_code Coupon code.
+	 * @param array  $line_items  Current line items.
+	 * @param float  $subtotal    Item subtotal before discounts.
+	 * @return array Keys: discount (float), line_items (array), applied (bool), message (array|null).
+	 */
+	private function apply_coupon($coupon_code, $line_items, $subtotal)
+	{
+		$result = array(
+			'discount'   => 0.0,
+			'line_items' => $line_items,
+			'applied'    => false,
+			'message'    => null,
+		);
+
+		if ('' === $coupon_code || ! function_exists('wc_format_coupon_code')) {
+			return $result;
+		}
+
+		$coupon = new WC_Coupon(wc_format_coupon_code($coupon_code));
+		if (! $coupon->get_id()) {
+			$result['message'] = array(
+				'type'     => 'error',
+				'code'     => 'invalid_coupon',
+				'path'     => '$.metadata.coupon_code',
+				'content'  => sprintf(__('Coupon "%s" is not valid.', 'ucp-adapter-for-woocommerce'), $coupon_code),
+				'severity' => 'recoverable',
+			);
+			return $result;
+		}
+
+		$discounter = new WC_Discounts();
+		$valid = $discounter->is_coupon_valid($coupon);
+		if (is_wp_error($valid)) {
+			$result['message'] = array(
+				'type'     => 'error',
+				'code'     => 'coupon_not_applicable',
+				'path'     => '$.metadata.coupon_code',
+				'content'  => $valid->get_error_message(),
+				'severity' => 'recoverable',
+			);
+			return $result;
+		}
+
+		$discount_type = $coupon->get_discount_type();
+		$coupon_amount = (float) $coupon->get_amount();
+		$discount = 0.0;
+
+		switch ($discount_type) {
+			case 'percent':
+				$discount = $subtotal * ($coupon_amount / 100.0);
+				$max = (float) $coupon->get_maximum_amount();
+				if ($max > 0 && $discount > $max) {
+					$discount = $max;
+				}
+				break;
+
+			case 'fixed_cart':
+				$discount = min($coupon_amount, $subtotal);
+				break;
+
+			case 'fixed_product':
+				foreach ($line_items as &$item) {
+					$product_id = isset($item['product_id']) ? absint($item['product_id']) : 0;
+					$product_ids = $coupon->get_product_ids();
+					if (! empty($product_ids) && ! in_array($product_id, $product_ids, true)) {
+						continue;
+					}
+					$qty = isset($item['quantity']) ? (int) $item['quantity'] : 1;
+					$item_discount = min($coupon_amount * $qty, (float) $item['subtotal_amount']);
+					$discount += $item_discount;
+					$item['discount_amount'] = wc_format_decimal($item_discount, 2);
+					$item['total_amount'] = wc_format_decimal(
+						max(0, (float) $item['subtotal_amount'] + (float) $item['tax_amount'] - $item_discount),
+						2
+					);
+				}
+				unset($item);
+				break;
+
+			default:
+				$discount = 0.0;
+		}
+
+		$result['discount'] = max(0, $discount);
+		$result['line_items'] = $line_items;
+		$result['applied'] = $discount > 0;
+
+		return $result;
 	}
 
 	/**

@@ -23,10 +23,8 @@ jobs:
           def read(path):
             return pathlib.Path(path).read_text(encoding="utf-8")
 
-          root_main = read("ucp_adapter_main.php")
-          trunk_main = read("trunk/ucp_adapter_main.php")
-          root_readme = read("readme.txt")
-          trunk_readme = read("trunk/readme.txt")
+          main_php = read("ucp_adapter_main.php")
+          readme = read("readme.txt")
 
           def extract(pattern, text, label):
             m = re.search(pattern, text, re.MULTILINE)
@@ -34,32 +32,21 @@ jobs:
               raise SystemExit(f"Missing expected field: {label}")
             return m.group(1).strip()
 
-          root_version = extract(r"^\s*\*\s*Version:\s*(.+)$", root_main, "root version")
-          trunk_version = extract(r"^\s*\*\s*Version:\s*(.+)$", trunk_main, "trunk version")
-          root_const = extract(r"^define\('UCP_ADAPTER_VERSION',\s*'([^']+)'\);$", root_main, "root const")
-          trunk_const = extract(r"^define\('UCP_ADAPTER_VERSION',\s*'([^']+)'\);$", trunk_main, "trunk const")
-          root_tag = extract(r"^Stable tag:\s*(.+)$", root_readme, "root stable tag")
-          trunk_tag = extract(r"^Stable tag:\s*(.+)$", trunk_readme, "trunk stable tag")
-
-          root_license = extract(r"^\s*\*\s*License:\s*(.+)$", root_main, "root license")
-          trunk_license = extract(r"^\s*\*\s*License:\s*(.+)$", trunk_main, "trunk license")
-          readme_license = extract(r"^License:\s*(.+)$", root_readme, "root readme license")
-          trunk_readme_license = extract(r"^License:\s*(.+)$", trunk_readme, "trunk readme license")
+          header_version = extract(r"^\s*\*\s*Version:\s*(.+)$", main_php, "header version")
+          const_version = extract(r"^define\('UCP_ADAPTER_VERSION',\s*'([^']+)'\);$", main_php, "const version")
+          stable_tag = extract(r"^Stable tag:\s*(.+)$", readme, "stable tag")
+          header_license = extract(r"^\s*\*\s*License:\s*(.+)$", main_php, "header license")
+          readme_license = extract(r"^License:\s*(.+)$", readme, "readme license")
 
           checks = [
-            ("version root vs trunk", root_version == trunk_version),
-            ("version root vs root const", root_version == root_const),
-            ("version root vs trunk const", root_version == trunk_const),
-            ("version root vs root stable tag", root_version == root_tag),
-            ("stable tag root vs trunk", root_tag == trunk_tag),
-            ("license root vs trunk", root_license == trunk_license),
-            ("license root vs readme", root_license == readme_license),
-            ("license readme root vs trunk", readme_license == trunk_readme_license),
+            ("header version vs const", header_version == const_version),
+            ("header version vs stable tag", header_version == stable_tag),
+            ("header license vs readme license", header_license == readme_license),
           ]
 
           failed = [name for name, ok in checks if not ok]
           if failed:
             raise SystemExit("Metadata consistency failed: " + ", ".join(failed))
 
-          print("Metadata consistency checks passed.")
+          print(f"Metadata consistency checks passed (v{header_version}).")
           PY

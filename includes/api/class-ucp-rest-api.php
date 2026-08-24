@@ -211,10 +211,50 @@ class UCP_Adapter_REST_API
 		foreach (array(self::UCP_NAMESPACE, self::ACP_NAMESPACE) as $namespace) {
 			register_rest_route(
 				$namespace,
+				'/health',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array(__CLASS__, 'handle_health_check'),
+					'permission_callback' => '__return_true',
+				)
+			);
+
+			register_rest_route(
+				$namespace,
+				'/products/(?P<product_id>[0-9]+)',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array(__CLASS__, 'handle_product_detail'),
+					'permission_callback' => array(__CLASS__, 'check_api_permission'),
+				)
+			);
+
+			register_rest_route(
+				$namespace,
+				'/products',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array(__CLASS__, 'handle_product_search'),
+					'permission_callback' => array(__CLASS__, 'check_api_permission'),
+				)
+			);
+
+			register_rest_route(
+				$namespace,
 				'/product/search',
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array(__CLASS__, 'handle_product_search'),
+					'permission_callback' => array(__CLASS__, 'check_api_permission'),
+				)
+			);
+
+			register_rest_route(
+				$namespace,
+				'/categories',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array(__CLASS__, 'handle_categories'),
 					'permission_callback' => array(__CLASS__, 'check_api_permission'),
 				)
 			);
@@ -351,6 +391,19 @@ class UCP_Adapter_REST_API
 	 */
 	public static function handle_create_checkout_session($request)
 	{
+		$idempotency_key = sanitize_text_field((string) $request->get_header('Idempotency-Key'));
+		if ('' !== $idempotency_key) {
+			$cached_session_id = get_transient('ucp_idempotency_' . md5($idempotency_key));
+			if (false !== $cached_session_id) {
+				$cached = UCP_Adapter_Session_Handler::get_instance()->get_session($cached_session_id);
+				if (! is_wp_error($cached)) {
+					$response = new WP_REST_Response(self::format_checkout_session_response($cached), 200);
+					$response->header('X-UCP-Idempotent-Replayed', 'true');
+					return $response;
+				}
+			}
+		}
+
 		$body = $request->get_json_params();
 		$body = is_array($body) ? $body : array();
 		$validation = self::validate_checkout_payload('create', $body);
@@ -362,13 +415,21 @@ class UCP_Adapter_REST_API
 		$active_capabilities = self::negotiate_capabilities(
 			isset($body['platform_profile']) && is_array($body['platform_profile']) ? $body['platform_profile'] : array()
 		);
+
+		$metadata = isset($body['metadata']) && is_array($body['metadata']) ? $body['metadata'] : array();
+
+		$agent_header = (string) $request->get_header('UCP-Agent');
+		if ('' !== $agent_header) {
+			$metadata['agent'] = self::parse_agent_header($agent_header);
+		}
+
 		$args     = array(
 			'protocol'              => $protocol,
 			'buyer'                 => isset($body['buyer']) && is_array($body['buyer']) ? $body['buyer'] : array(),
 			'line_items'            => isset($body['line_items']) && is_array($body['line_items']) ? $body['line_items'] : array(),
 			'fulfillment_address'   => isset($body['fulfillment_address']) && is_array($body['fulfillment_address']) ? $body['fulfillment_address'] : array(),
 			'fulfillment_option_id' => isset($body['fulfillment_option_id']) ? sanitize_key($body['fulfillment_option_id']) : '',
-			'metadata'              => isset($body['metadata']) && is_array($body['metadata']) ? $body['metadata'] : array(),
+			'metadata'              => $metadata,
 			'capabilities'          => $active_capabilities,
 		);
 
@@ -379,12 +440,42 @@ class UCP_Adapter_REST_API
 			return $session_id;
 		}
 
+		if ('' !== $idempotency_key) {
+			$timeout = max(60, (int) get_option('ucp_adapter_session_timeout', 3600));
+			set_transient('ucp_idempotency_' . md5($idempotency_key), $session_id, $timeout);
+		}
+
 		$session = $session_handler->get_session($session_id);
 		if (is_wp_error($session)) {
 			return $session;
 		}
 
+		do_action('ucp_adapter_session_created', $session);
+
 		return new WP_REST_Response(self::format_checkout_session_response($session), 201);
+	}
+
+	/**
+	 * Parse UCP-Agent header into structured metadata.
+	 *
+	 * @param string $header UCP-Agent header value.
+	 * @return array
+	 */
+	private static function parse_agent_header($header)
+	{
+		$agent = array(
+			'raw' => sanitize_text_field($header),
+		);
+
+		if (preg_match('/^([^\s;]+)/', $header, $name_match)) {
+			$agent['name'] = sanitize_text_field($name_match[1]);
+		}
+
+		if (preg_match('/profile="([^"]+)"/', $header, $profile_match)) {
+			$agent['profile'] = esc_url_raw($profile_match[1]);
+		}
+
+		return $agent;
 	}
 
 	/**
@@ -494,6 +585,8 @@ class UCP_Adapter_REST_API
 			return $updated;
 		}
 
+		do_action('ucp_adapter_session_completed', $updated, $order);
+
 		return new WP_REST_Response(self::format_checkout_session_response($updated), 200);
 	}
 
@@ -525,6 +618,8 @@ class UCP_Adapter_REST_API
 		if (is_wp_error($updated)) {
 			return $updated;
 		}
+
+		do_action('ucp_adapter_session_canceled', $updated);
 
 		return new WP_REST_Response(self::format_checkout_session_response($updated), 200);
 	}
@@ -650,46 +745,239 @@ class UCP_Adapter_REST_API
 	}
 
 	/**
-	 * Product search endpoint.
+	 * Health check endpoint (no auth required).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public static function handle_health_check($request)
+	{
+		$wc_active = class_exists('WooCommerce');
+		$namespace = false !== strpos($request->get_route(), '/acp/') ? 'acp' : 'ucp';
+
+		return new WP_REST_Response(
+			array(
+				'status'    => $wc_active ? 'ok' : 'degraded',
+				'version'   => UCP_ADAPTER_VERSION,
+				'protocol'  => $namespace,
+				'woocommerce' => $wc_active,
+				'timestamp' => gmdate(DATE_ATOM),
+				'discovery' => home_url('/.well-known/ucp'),
+			),
+			$wc_active ? 200 : 503
+		);
+	}
+
+	/**
+	 * Single product detail endpoint.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function handle_product_detail($request)
+	{
+		$product = wc_get_product(absint($request->get_param('product_id')));
+		if (! $product || ! $product->exists() || 'publish' !== $product->get_status()) {
+			return new WP_Error(
+				'ucp_adapter_product_not_found',
+				__('Product not found.', 'ucp-adapter-for-woocommerce'),
+				array('status' => 404)
+			);
+		}
+
+		$data = self::format_product($product);
+
+		if ($product->is_type('variable')) {
+			$data['variations'] = array();
+			$variation_ids = $product->get_children();
+			foreach ($variation_ids as $variation_id) {
+				$variation = wc_get_product($variation_id);
+				if (! $variation || ! $variation->exists()) {
+					continue;
+				}
+				$var_data = self::format_product($variation);
+				$var_data['attributes'] = $variation->get_variation_attributes();
+				$data['variations'][] = $var_data;
+			}
+		}
+
+		if ($product->is_type('grouped')) {
+			$data['grouped_products'] = $product->get_children();
+		}
+
+		$categories = array();
+		$terms = get_the_terms($product->get_id(), 'product_cat');
+		if (is_array($terms)) {
+			foreach ($terms as $term) {
+				$categories[] = array(
+					'id'   => $term->term_id,
+					'name' => $term->name,
+					'slug' => $term->slug,
+				);
+			}
+		}
+		$data['categories'] = $categories;
+
+		$tags = array();
+		$tag_terms = get_the_terms($product->get_id(), 'product_tag');
+		if (is_array($tag_terms)) {
+			foreach ($tag_terms as $term) {
+				$tags[] = array(
+					'id'   => $term->term_id,
+					'name' => $term->name,
+					'slug' => $term->slug,
+				);
+			}
+		}
+		$data['tags'] = $tags;
+
+		$gallery = array();
+		foreach ($product->get_gallery_image_ids() as $image_id) {
+			$url = wp_get_attachment_url($image_id);
+			if ($url) {
+				$gallery[] = $url;
+			}
+		}
+		$data['gallery_images'] = $gallery;
+		$data['description'] = wp_strip_all_tags($product->get_description());
+		$data['weight'] = $product->get_weight();
+		$data['dimensions'] = array(
+			'length' => $product->get_length(),
+			'width'  => $product->get_width(),
+			'height' => $product->get_height(),
+		);
+
+		if ($product->is_type('simple') || $product->is_type('variable')) {
+			$data['attributes'] = array();
+			foreach ($product->get_attributes() as $attr) {
+				$data['attributes'][] = array(
+					'name'    => wc_attribute_label($attr->get_name()),
+					'options' => $attr->get_options(),
+					'visible' => $attr->get_visible(),
+				);
+			}
+		}
+
+		return new WP_REST_Response($data, 200);
+	}
+
+	/**
+	 * Product categories endpoint.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public static function handle_categories($request)
+	{
+		$parent   = $request->get_param('parent');
+		$hide_empty = $request->get_param('hide_empty');
+
+		$args = array(
+			'taxonomy'   => 'product_cat',
+			'orderby'    => 'name',
+			'order'      => 'ASC',
+			'hide_empty' => null !== $hide_empty ? (bool) $hide_empty : true,
+		);
+
+		if (null !== $parent) {
+			$args['parent'] = absint($parent);
+		}
+
+		$terms = get_terms($args);
+		if (is_wp_error($terms)) {
+			$terms = array();
+		}
+
+		$categories = array();
+		foreach ($terms as $term) {
+			$thumbnail_id = get_term_meta($term->term_id, 'thumbnail_id', true);
+			$categories[] = array(
+				'id'          => $term->term_id,
+				'name'        => $term->name,
+				'slug'        => $term->slug,
+				'description' => $term->description,
+				'parent'      => $term->parent,
+				'count'       => $term->count,
+				'image'       => $thumbnail_id ? wp_get_attachment_url($thumbnail_id) : null,
+			);
+		}
+
+		return new WP_REST_Response(
+			array(
+				'success' => true,
+				'data'    => $categories,
+				'meta'    => array(
+					'count' => count($categories),
+				),
+			),
+			200
+		);
+	}
+
+	/**
+	 * Product search endpoint with enhanced filtering.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public static function handle_product_search($request)
 	{
-		$search = sanitize_text_field((string) $request->get_param('search'));
-		$page   = max(1, absint($request->get_param('page')));
-		$limit  = max(1, min(100, absint($request->get_param('limit'))));
+		$search      = sanitize_text_field((string) $request->get_param('search'));
+		$page        = max(1, absint($request->get_param('page')));
+		$limit       = max(1, min(100, absint($request->get_param('limit') ?: 10)));
+		$category    = $request->get_param('category');
+		$min_price   = $request->get_param('min_price');
+		$max_price   = $request->get_param('max_price');
+		$in_stock    = $request->get_param('in_stock');
+		$orderby     = sanitize_key((string) ($request->get_param('orderby') ?: 'date'));
+		$order       = strtoupper(sanitize_key((string) ($request->get_param('order') ?: 'DESC')));
 
-		$products = wc_get_products(
-			array(
-				'status'  => 'publish',
-				'limit'   => $limit,
-				'page'    => $page,
-				's'       => $search,
-				'orderby' => 'date',
-				'order'   => 'DESC',
-			)
+		$valid_orderby = array('date', 'price', 'title', 'popularity', 'rating');
+		if (! in_array($orderby, $valid_orderby, true)) {
+			$orderby = 'date';
+		}
+		if (! in_array($order, array('ASC', 'DESC'), true)) {
+			$order = 'DESC';
+		}
+
+		$query_args = array(
+			'status'  => 'publish',
+			'limit'   => $limit,
+			'page'    => $page,
+			'orderby' => $orderby,
+			'order'   => $order,
+			'paginate' => true,
 		);
+
+		if ('' !== $search) {
+			$query_args['s'] = $search;
+		}
+
+		if (null !== $category) {
+			$query_args['category'] = array(sanitize_text_field($category));
+		}
+
+		if (null !== $in_stock) {
+			$query_args['stock_status'] = $in_stock ? 'instock' : 'outofstock';
+		}
+
+		$query_result = wc_get_products($query_args);
+		$products = $query_result->products;
+		$total = $query_result->total;
+		$max_pages = $query_result->max_num_pages;
 
 		$results = array();
 		foreach ($products as $product) {
-			$image_id = $product->get_image_id();
-			$image    = $image_id ? wp_get_attachment_url($image_id) : wc_placeholder_img_src();
+			$product_data = self::format_product($product);
 
-			$results[] = array(
-				'id'                => $product->get_id(),
-				'name'              => $product->get_name(),
-				'sku'               => $product->get_sku(),
-				'type'              => $product->get_type(),
-				'price'             => $product->get_price(),
-				'regular_price'     => $product->get_regular_price(),
-				'sale_price'        => $product->get_sale_price(),
-				'currency'          => function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD',
-				'permalink'         => $product->get_permalink(),
-				'image'             => $image,
-				'short_description' => wp_strip_all_tags($product->get_short_description()),
-			);
+			if (null !== $min_price && (float) $product->get_price() < (float) $min_price) {
+				continue;
+			}
+			if (null !== $max_price && (float) $product->get_price() > (float) $max_price) {
+				continue;
+			}
+
+			$results[] = $product_data;
 		}
 
 		return new WP_REST_Response(
@@ -697,14 +985,50 @@ class UCP_Adapter_REST_API
 				'success' => true,
 				'data'    => $results,
 				'meta'    => array(
-					'page'   => $page,
-					'limit'  => $limit,
-					'search' => $search,
-					'count'  => count($results),
+					'page'      => $page,
+					'limit'     => $limit,
+					'total'     => $total,
+					'pages'     => $max_pages,
+					'has_more'  => $page < $max_pages,
+					'search'    => $search,
+					'count'     => count($results),
 				),
 			),
 			200
 		);
+	}
+
+	/**
+	 * Format a product for API output.
+	 *
+	 * @param WC_Product $product Product object.
+	 * @return array
+	 */
+	private static function format_product($product)
+	{
+		$image_id = $product->get_image_id();
+		$image    = $image_id ? wp_get_attachment_url($image_id) : wc_placeholder_img_src();
+
+		$data = array(
+			'id'                => $product->get_id(),
+			'name'              => $product->get_name(),
+			'slug'              => $product->get_slug(),
+			'sku'               => $product->get_sku(),
+			'type'              => $product->get_type(),
+			'price'             => $product->get_price(),
+			'regular_price'     => $product->get_regular_price(),
+			'sale_price'        => $product->get_sale_price(),
+			'on_sale'           => $product->is_on_sale(),
+			'currency'          => function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD',
+			'permalink'         => $product->get_permalink(),
+			'image'             => $image,
+			'short_description' => wp_strip_all_tags($product->get_short_description()),
+			'in_stock'          => $product->is_in_stock(),
+			'stock_quantity'    => $product->get_stock_quantity(),
+			'purchasable'       => $product->is_purchasable(),
+		);
+
+		return $data;
 	}
 
 	/**

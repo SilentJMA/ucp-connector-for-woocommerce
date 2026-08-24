@@ -168,6 +168,9 @@ class UCP_Adapter_Admin
 		register_setting('ucp_adapter_settings', 'ucp_adapter_agent_whitelist_enabled', array('sanitize_callback' => 'absint'));
 		register_setting('ucp_adapter_settings', 'ucp_adapter_agent_whitelist_domains', array('sanitize_callback' => 'sanitize_textarea_field'));
 		register_setting('ucp_adapter_settings', 'ucp_adapter_require_agent_signature', array('sanitize_callback' => 'absint'));
+		register_setting('ucp_adapter_settings', 'ucp_adapter_cors_origins', array('sanitize_callback' => 'sanitize_textarea_field'));
+		register_setting('ucp_adapter_settings', 'ucp_adapter_webhook_url', array('sanitize_callback' => 'esc_url_raw'));
+		register_setting('ucp_adapter_settings', 'ucp_adapter_webhook_secret', array('sanitize_callback' => 'sanitize_text_field'));
 	}
 
 	/**
@@ -347,6 +350,18 @@ class UCP_Adapter_Admin
 					<p><?php printf(esc_html__('ACP: %1$s · UCP: %2$s', 'ucp-adapter-for-woocommerce'), esc_html((string) $stats['acp']), esc_html((string) $stats['ucp'])); ?></p>
 				</div>
 				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('Discovery Endpoint', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p><code><?php echo esc_html(home_url('/.well-known/ucp')); ?></code></p>
+					<p class="description"><?php esc_html_e('AI agents use this URL to auto-discover your store\'s UCP capabilities.', 'ucp-adapter-for-woocommerce'); ?></p>
+				</div>
+				<div class="ucp-admin-card">
+					<h3><?php esc_html_e('API Endpoints', 'ucp-adapter-for-woocommerce'); ?></h3>
+					<p>
+						<code><?php echo esc_html(rest_url('acp/v1/health')); ?></code><br />
+						<code><?php echo esc_html(rest_url('ucp/v1/health')); ?></code>
+					</p>
+				</div>
+				<div class="ucp-admin-card">
 					<h3><?php esc_html_e('Quick Actions', 'ucp-adapter-for-woocommerce'); ?></h3>
 					<p>
 						<a href="<?php echo esc_url(admin_url('admin.php?page=' . self::SESSIONS_SLUG)); ?>"><?php esc_html_e('View Sessions', 'ucp-adapter-for-woocommerce'); ?></a>
@@ -491,6 +506,28 @@ class UCP_Adapter_Admin
 							<p class="description"><?php esc_html_e('One IP address per line. Leave empty to allow all IPs.', 'ucp-adapter-for-woocommerce'); ?></p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row"><label for="ucp_adapter_cors_origins"><?php esc_html_e('CORS Allowed Origins', 'ucp-adapter-for-woocommerce'); ?></label></th>
+						<td>
+							<textarea id="ucp_adapter_cors_origins" name="ucp_adapter_cors_origins" rows="3" cols="50"><?php echo esc_textarea(get_option('ucp_adapter_cors_origins', '*')); ?></textarea>
+							<p class="description"><?php esc_html_e('One origin per line, or * to allow all. Controls which domains can call the API from browsers.', 'ucp-adapter-for-woocommerce'); ?></p>
+						</td>
+					</tr>
+					<tr><th colspan="2"><h2><?php esc_html_e('Webhooks', 'ucp-adapter-for-woocommerce'); ?></h2></th></tr>
+					<tr>
+						<th scope="row"><label for="ucp_adapter_webhook_url"><?php esc_html_e('Webhook URL', 'ucp-adapter-for-woocommerce'); ?></label></th>
+						<td>
+							<input type="url" id="ucp_adapter_webhook_url" name="ucp_adapter_webhook_url" class="regular-text" value="<?php echo esc_attr(get_option('ucp_adapter_webhook_url', '')); ?>" />
+							<p class="description"><?php esc_html_e('Receives HMAC-signed POST notifications on session create, complete, and cancel events.', 'ucp-adapter-for-woocommerce'); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="ucp_adapter_webhook_secret"><?php esc_html_e('Webhook Secret', 'ucp-adapter-for-woocommerce'); ?></label></th>
+						<td>
+							<input type="text" id="ucp_adapter_webhook_secret" name="ucp_adapter_webhook_secret" class="regular-text" value="<?php echo esc_attr(get_option('ucp_adapter_webhook_secret', '')); ?>" />
+							<p class="description"><?php esc_html_e('Used to sign webhook payloads with HMAC-SHA256. Verify via the X-UCP-Signature header.', 'ucp-adapter-for-woocommerce'); ?></p>
+						</td>
+					</tr>
 				</table>
 				<div class="ucp-form-actions">
 					<?php submit_button(__('Save Security Settings', 'ucp-adapter-for-woocommerce')); ?>
@@ -582,8 +619,20 @@ class UCP_Adapter_Admin
 				<h2><?php esc_html_e('UCP Compatibility Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
 				<pre><code><?php echo esc_html("POST {$ucp_base}/session\nPUT {$ucp_base}/update/{id}\nGET {$ucp_base}/status/{id}\nPOST {$ucp_base}/complete/{id}\nGET {$ucp_base}/capabilities"); ?></code></pre>
 
-				<h2><?php esc_html_e('Common Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
-				<pre><code><?php echo esc_html("GET {$acp_base}/product/search?search=shirt\nGET {$acp_base}/orders/{order_id}\nGET {$acp_base}/sessions"); ?></code></pre>
+				<h2><?php esc_html_e('Catalog & Common Routes', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<pre><code><?php echo esc_html("GET {$acp_base}/health\nGET {$acp_base}/products/{id}\nGET {$acp_base}/products?search=shirt&category=clothing&min_price=10&max_price=50&in_stock=1\nGET {$acp_base}/product/search?search=shirt\nGET {$acp_base}/categories\nGET {$acp_base}/orders/{order_id}\nGET {$acp_base}/sessions"); ?></code></pre>
+
+				<h2><?php esc_html_e('Discovery', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<pre><code><?php echo esc_html(home_url('/.well-known/ucp')); ?></code></pre>
+				<p><?php esc_html_e('Public JSON manifest for AI agent auto-discovery (no authentication required).', 'ucp-adapter-for-woocommerce'); ?></p>
+
+				<h2><?php esc_html_e('Additional Headers', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<p><code>Idempotency-Key: &lt;unique-key&gt;</code> — <?php esc_html_e('Prevents duplicate session creation. Same key returns the existing session.', 'ucp-adapter-for-woocommerce'); ?></p>
+
+				<h2><?php esc_html_e('Webhooks', 'ucp-adapter-for-woocommerce'); ?></h2>
+				<p><?php esc_html_e('When configured, the plugin sends HMAC-SHA256 signed POST requests on these events:', 'ucp-adapter-for-woocommerce'); ?></p>
+				<pre><code><?php echo esc_html("session.created\nsession.completed\nsession.canceled"); ?></code></pre>
+				<p><?php esc_html_e('Verify signatures using the X-UCP-Signature header: sha256=HMAC(timestamp.body, secret)', 'ucp-adapter-for-woocommerce'); ?></p>
 			</div>
 		<?php
 		$this->render_shell_end();

@@ -1,0 +1,45 @@
+# AI / agent tool artifacts
+.claude/
+CLAUDE.md
+.codex/
+.cursor/
+.aider*
+.continue/
+.codeium/
+.tabnine/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+._*
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# PHP dependencies
+vendor/
+composer.lock
+
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+
+# WordPress dev
+*.log
+.env
+.env.*
+wp-cli.local.yml
+
+# Build artifacts
+*.zip
+*.tar.gz

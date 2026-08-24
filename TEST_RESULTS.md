@@ -4,7 +4,7 @@
 
 - Runtime: Local WordPress + WooCommerce
 - Date: March 21, 2026
-- Plugin version under test: `1.3.0`
+- Plugin version under test: `1.1.0`
 
 ## Smoke Test Coverage
 

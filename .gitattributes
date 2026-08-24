@@ -1,0 +1,23 @@
+# Exclude dev-only files from git archive / GitHub release downloads
+.github/         export-ignore
+fixtures/        export-ignore
+scripts/         export-ignore
+TEST_RESULTS.md  export-ignore
+CONTRIBUTING.md  export-ignore
+.gitignore       export-ignore
+.gitattributes   export-ignore
+
+# Normalize line endings
+* text=auto
+*.php text eol=lf
+*.js  text eol=lf
+*.css text eol=lf
+*.md  text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.sh  text eol=lf
+
+# Mark binary assets
+*.png binary
+*.svg binary
+*.ico binary

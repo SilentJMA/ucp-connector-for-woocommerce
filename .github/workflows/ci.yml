@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' file; do
             jq -e . "$file" >/dev/null
-          done < <(find fixtures trunk/fixtures -type f -name "*.json" -print0)
+          done < <(find fixtures -type f -name "*.json" -print0)
 
       - name: Check shell script syntax
         run: bash -n scripts/smoke-test.sh

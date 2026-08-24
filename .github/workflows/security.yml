@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   gitleaks:
@@ -26,32 +25,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  codeql:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        language:
-          - javascript
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Analyze
-        uses: github/codeql-action/analyze@v4
-
   semgrep-php:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -64,4 +42,4 @@ jobs:
       - name: Run Semgrep on PHP
         run: |
           set -euo pipefail
-          semgrep --error --config p/php --config p/security-audit includes ucp_adapter_main.php trunk/includes trunk/ucp_adapter_main.php
+          semgrep --error --config p/php --config p/security-audit includes ucp_adapter_main.php

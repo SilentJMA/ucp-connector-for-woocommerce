@@ -4,7 +4,7 @@
  * Plugin Name: UCP Connector for Woocommerce
  * Plugin URI: https://wordpress.org/plugins/ucp-adapter-for-woocommerce
  * Description: WooCommerce adapter for UCP and OpenAI ACP checkout sessions.
- * Version: 1.0.4
+ * Version: 1.1.0
  * Requires at least: 6.9
  * Requires PHP: 8.0
  * Author: Mohamed Ayoub Jabane
@@ -21,7 +21,7 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
-define('UCP_ADAPTER_VERSION', '1.0.4');
+define('UCP_ADAPTER_VERSION', '1.1.0');
 define('UCP_ADAPTER_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UCP_ADAPTER_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('UCP_ADAPTER_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -71,6 +71,8 @@ class UCP_Adapter_Core
 		require_once UCP_ADAPTER_PLUGIN_DIR . 'includes/api/class-ucp-rest-api.php';
 		require_once UCP_ADAPTER_PLUGIN_DIR . 'includes/core/class-ucp-session-handler.php';
 		require_once UCP_ADAPTER_PLUGIN_DIR . 'includes/core/class-ucp-security.php';
+		require_once UCP_ADAPTER_PLUGIN_DIR . 'includes/core/class-ucp-discovery.php';
+		require_once UCP_ADAPTER_PLUGIN_DIR . 'includes/core/class-ucp-webhook.php';
 		require_once UCP_ADAPTER_PLUGIN_DIR . 'includes/admin/class-ucp-admin.php';
 	}
 
@@ -83,8 +85,11 @@ class UCP_Adapter_Core
 	{
 		add_action('init', array($this, 'init'));
 		add_action('rest_api_init', array('UCP_Adapter_REST_API', 'register_routes'));
+		add_action('rest_api_init', array($this, 'register_cors_support'));
 		add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
 		add_action('wp_ajax_ucp_adapter_regenerate_api_key', array($this, 'ajax_regenerate_api_key'));
+
+		UCP_Adapter_Discovery::init();
 
 		if (is_admin()) {
 			UCP_Adapter_Admin::get_instance();
@@ -102,7 +107,55 @@ class UCP_Adapter_Core
 	public function init()
 	{
 		UCP_Adapter_Session_Handler::get_instance();
+		UCP_Adapter_Webhook::init();
 		do_action('ucp_adapter_init');
+	}
+
+	/**
+	 * Add CORS headers for REST API requests to UCP/ACP endpoints.
+	 *
+	 * @return void
+	 */
+	public function register_cors_support()
+	{
+		add_filter('rest_pre_serve_request', array($this, 'add_cors_headers'), 10, 4);
+	}
+
+	/**
+	 * Send CORS headers on UCP/ACP REST responses.
+	 *
+	 * @param bool             $served  Whether the request has been served.
+	 * @param WP_HTTP_Response $result  Response object.
+	 * @param WP_REST_Request  $request Request object.
+	 * @param WP_REST_Server   $server  Server instance.
+	 * @return bool
+	 */
+	public function add_cors_headers($served, $result, $request, $server)
+	{
+		$route = (string) $request->get_route();
+		if (0 !== strpos($route, '/ucp/') && 0 !== strpos($route, '/acp/')) {
+			return $served;
+		}
+
+		$origin = $request->get_header('Origin');
+		$allowed_origins = trim((string) get_option('ucp_adapter_cors_origins', '*'));
+
+		if ('*' === $allowed_origins || '' === $allowed_origins) {
+			header('Access-Control-Allow-Origin: *');
+		} elseif ('' !== $origin) {
+			$origins = array_map('trim', explode("\n", $allowed_origins));
+			if (in_array($origin, $origins, true)) {
+				header('Access-Control-Allow-Origin: ' . $origin);
+				header('Vary: Origin');
+			}
+		}
+
+		header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
+		header('Access-Control-Allow-Headers: Authorization, Content-Type, X-UCP-API-Key, X-ACP-API-Key, UCP-Agent, Request-Signature, Idempotency-Key');
+		header('Access-Control-Expose-Headers: X-UCP-Idempotent-Replayed, X-RateLimit-Limit, X-RateLimit-Remaining');
+		header('Access-Control-Max-Age: 86400');
+
+		return $served;
 	}
 
 	/**
@@ -187,8 +240,11 @@ class UCP_Adapter_Core
 		add_option('ucp_adapter_agent_whitelist_enabled', 0);
 		add_option('ucp_adapter_agent_whitelist_domains', '');
 		add_option('ucp_adapter_require_agent_signature', 0);
+		add_option('ucp_adapter_cors_origins', '*');
+		add_option('ucp_adapter_webhook_url', '');
+		add_option('ucp_adapter_webhook_secret', '');
 
-		flush_rewrite_rules();
+		UCP_Adapter_Discovery::flush_rules();
 	}
 
 	/**

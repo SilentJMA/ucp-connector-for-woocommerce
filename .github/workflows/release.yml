@@ -26,8 +26,14 @@ jobs:
           rsync -a ./ "$STAGE/" \
             --exclude ".git/" \
             --exclude ".github/" \
-            --exclude "trunk/" \
-            --exclude ".DS_Store"
+            --exclude ".gitignore" \
+            --exclude ".gitattributes" \
+            --exclude ".DS_Store" \
+            --exclude "fixtures/" \
+            --exclude "scripts/" \
+            --exclude "TEST_RESULTS.md" \
+            --exclude "CONTRIBUTING.md" \
+            --exclude "SECURITY.md"
 
           (cd "$RUNNER_TEMP" && zip -r "ucp-connector-for-woocommerce-${VERSION}.zip" "ucp-adapter-for-woocommerce")
           echo "ZIP_PATH=$RUNNER_TEMP/ucp-connector-for-woocommerce-${VERSION}.zip" >> "$GITHUB_ENV"
