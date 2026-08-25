@@ -68,6 +68,33 @@ A session becomes ready when it has valid line items, a buyer email, and a fulfi
 - **WooCommerce order creation** — sessions convert to real WooCommerce orders on completion
 - **Admin dashboard** — Overview with discovery status, sessions browser, configuration, security, and API docs pages
 
+## Screenshots
+
+### Overview Dashboard
+Session stats, protocol mix, discovery endpoint URL, and quick actions at a glance.
+
+![Overview Dashboard](assets/screenshots/overview.png)
+
+### Checkout Sessions
+Live view of normalized checkout sessions across ACP and UCP routes with status, totals, and timestamps.
+
+![Checkout Sessions](assets/screenshots/sessions.png)
+
+### Configuration
+Protocol toggles (UCP/ACP), session timeout, merchant metadata, checkout return URL, and policy links.
+
+![Configuration](assets/screenshots/configuration.png)
+
+### Security
+API key management, rate limiting, agent domain whitelist, JWS signature verification, IP allowlist, CORS origins, and webhook signing.
+
+![Security](assets/screenshots/security.png)
+
+### API Docs
+Built-in reference for all endpoints, authentication methods, webhook events, and idempotency headers.
+
+![API Docs](assets/screenshots/api-docs.png)
+
 ## Requirements
 
 | Requirement | Version |

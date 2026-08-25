@@ -64,6 +64,14 @@ Catalog & Common (available on both namespaces)
 * `GET /orders/{order_id}`
 * `GET /sessions`
 
+== Screenshots ==
+
+1. **Overview Dashboard** — Session stats, protocol mix, discovery endpoint URL, and quick actions.
+2. **Checkout Sessions** — Live view of normalized sessions across ACP and UCP with status and totals.
+3. **Configuration** — Protocol toggles, session timeout, merchant metadata, and checkout URLs.
+4. **Security** — API key management, rate limiting, agent whitelist, CORS, and webhook signing.
+5. **API Docs** — Built-in reference for endpoints, authentication, webhooks, and idempotency.
+
 == Installation ==
 
 1. Upload to `/wp-content/plugins/ucp-adapter-for-woocommerce/`
